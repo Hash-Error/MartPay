@@ -1,0 +1,33 @@
+name: mobile
+description: "MartPay - Scan. Pay. Go. Self-Checkout Supermarket Customer Portal"
+version: 1.0.0+1
+
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State Management & DI
+  provider: ^6.1.2
+
+  # Networking
+  http: ^1.2.1
+
+  # Security & QR Codes
+  qr_flutter: ^4.1.0
+  mobile_scanner: ^5.0.0
+
+  # Persistence
+  shared_preferences: ^2.2.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true

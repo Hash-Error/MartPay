@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: martpay-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: martpay_db
+      POSTGRES_USER: martpay_user
+      POSTGRES_PASSWORD: martpay_secure_pass
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U martpay_user -d martpay_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: martpay-redis
+    restart: always
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: martpay-backend
+    restart: always
+    ports:
+      - '3000:3000'
+    environment:
+      PORT: 3000
+      NODE_ENV: production
+      DATABASE_URL: postgresql://martpay_user:martpay_secure_pass@postgres:5432/martpay_db?schema=public
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: super_secure_martpay_jwt_secret_key_2026
+      JWT_EXPIRATION: 3600s
+      JWT_REFRESH_SECRET: super_secure_martpay_jwt_refresh_secret_key_2026
+      JWT_REFRESH_EXPIRATION: 7d
+      QR_SIGNING_KEY: super_secure_martpay_qr_signing_key_hmac_sha256_2026
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  redis_data:
