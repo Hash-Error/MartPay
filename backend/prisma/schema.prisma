@@ -27,6 +27,7 @@ model User {
   addresses           Address[]
   paymentMethods      PaymentMethod[]
   notificationSetting NotificationSetting?
+  storeEmployees      StoreEmployee[]
 
   @@map("users")
 }
@@ -147,4 +148,76 @@ model NotificationSetting {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("notification_settings")
+}
+
+model Store {
+  id          String          @id @default(uuid())
+  name        String
+  phoneNumber String?
+  isActive    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  locations   StoreLocation[]
+  setting     StoreSetting?
+  employees   StoreEmployee[]
+
+  @@map("stores")
+}
+
+model StoreLocation {
+  id         String   @id @default(uuid())
+  storeId    String
+  address    String
+  city       String
+  state      String?
+  postalCode String
+  country    String
+  latitude   Float?
+  longitude  Float?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@map("store_locations")
+}
+
+model StoreSetting {
+  id        String   @id @default(uuid())
+  storeId   String   @unique
+  taxRate   Float    @default(0.0)
+  currency  String   @default("USD")
+  timezone  String   @default("UTC")
+  updatedAt DateTime @updatedAt
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@map("store_settings")
+}
+
+model StoreRole {
+  id          String          @id @default(uuid())
+  name        String          @unique // e.g. "STORE_MANAGER", "CASHIER", "GATE_STAFF"
+  permissions String[]        // array of permission codes: "read:billing", "verify:exit", etc.
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  employees   StoreEmployee[]
+
+  @@map("store_roles")
+}
+
+model StoreEmployee {
+  id        String   @id @default(uuid())
+  storeId   String
+  userId    String
+  roleId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  store Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  user  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role  StoreRole @relation(fields: [roleId], references: [id], onDelete: Restrict)
+
+  @@unique([storeId, userId])
+  @@map("store_employees")
 }
