@@ -129,10 +129,28 @@ model Order {
   qrExpiresAt DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  payments    Payment[]
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("orders")
+}
+
+model Payment {
+  id            String   @id @default(uuid())
+  orderId       String
+  amount        Float
+  currency      String   @default("USD")
+  provider      String   // "stripe" | "razorpay"
+  status        String   @default("pending") // "pending" | "success" | "failed" | "refunded"
+  transactionId String?
+  refundId      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
 }
 
 model AuditLog {
