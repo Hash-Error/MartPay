@@ -13,6 +13,7 @@ import { InventoryModule } from './modules/inventory/inventory.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 
 @Module({
   imports: [
@@ -21,7 +22,7 @@ import { AdminModule } from './modules/admin/admin.module';
       isGlobal: true,
       envFilePath: '.env',
     }),
-    
+
     // Core Modules
     PrismaModule,
     RedisModule,
@@ -38,6 +39,7 @@ import { AdminModule } from './modules/admin/admin.module';
     PaymentsModule,
     NotificationsModule,
     AdminModule,
+    AnalyticsModule,
   ],
 })
 export class AppModule {}
