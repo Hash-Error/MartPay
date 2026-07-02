@@ -11,6 +11,8 @@ import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
 import { StoresModule } from './modules/stores/stores.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
 import { PaymentsModule } from './modules/payments/payments.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
+import { AdminModule } from './modules/admin/admin.module';
 
 @Module({
   imports: [
@@ -34,6 +36,8 @@ import { PaymentsModule } from './modules/payments/payments.module';
     StoresModule,
     InventoryModule,
     PaymentsModule,
+    NotificationsModule,
+    AdminModule,
   ],
 })
 export class AppModule {}

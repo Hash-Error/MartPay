@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../../database/prisma.service';
 import { StripeService } from './stripe.service';
 import { RazorpayService } from './razorpay.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { VerifyPaymentDto } from './dto/verify-payment.dto';
 import { RefundPaymentDto } from './dto/refund-payment.dto';
@@ -12,6 +13,7 @@ export class PaymentsService {
     private prisma: PrismaService,
     private stripeService: StripeService,
     private razorpayService: RazorpayService,
+    private notificationsService: NotificationsService,
   ) {}
 
   async createPayment(createPaymentDto: CreatePaymentDto) {
@@ -29,7 +31,6 @@ export class PaymentsService {
       throw new BadRequestException('Order is already paid');
     }
 
-    // Initialize local payment registry
     const localPayment = await this.prisma.payment.create({
       data: {
         orderId,
@@ -61,7 +62,6 @@ export class PaymentsService {
         },
       };
     } else {
-      // Razorpay
       const rzpOrder = await this.razorpayService.createOrder(
         order.totalAmount,
         currency || 'INR',
@@ -111,7 +111,6 @@ export class PaymentsService {
       const result = await this.stripeService.verifyPaymentIntent(transactionId);
       isValid = result.status === 'succeeded';
     } else {
-      // Razorpay
       if (!paymentId || !signature) {
         throw new BadRequestException('paymentId and signature are required for Razorpay verification');
       }
@@ -126,8 +125,7 @@ export class PaymentsService {
       throw new BadRequestException('Payment verification check failed');
     }
 
-    // Success payment updates
-    const finalTxId = localPayment.provider === 'razorpay' ? paymentId : transactionId;
+    const finalTxId = (localPayment.provider === 'razorpay' ? paymentId : transactionId) || transactionId;
     await this.prisma.payment.update({
       where: { id: localPayment.id },
       data: {
@@ -136,9 +134,8 @@ export class PaymentsService {
       },
     });
 
-    // Generate secure QR token for receipt verification
     const qrToken = `qr_rcpt_${Math.random().toString(36).substring(2, 12)}_${Date.now()}`;
-    const qrExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours expiry
+    const qrExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     await this.prisma.order.update({
       where: { id: orderId },
@@ -148,6 +145,18 @@ export class PaymentsService {
         qrExpiresAt,
       },
     });
+
+    // Fire payment success notification
+    try {
+      await this.notificationsService.notifyPaymentSuccess(
+        order.userId,
+        orderId,
+        order.totalAmount,
+        finalTxId,
+      );
+    } catch (err) {
+      // Bypassed if user is not resolved
+    }
 
     return {
       status: 'success',
@@ -180,6 +189,7 @@ export class PaymentsService {
 
     const payment = await this.prisma.payment.findUnique({
       where: { id: paymentId },
+      include: { order: true },
     });
     if (!payment) {
       throw new NotFoundException('Payment record not found');
@@ -209,7 +219,6 @@ export class PaymentsService {
       },
     });
 
-    // Revert order status
     await this.prisma.order.update({
       where: { id: payment.orderId },
       data: {
@@ -218,6 +227,18 @@ export class PaymentsService {
         qrExpiresAt: null,
       },
     });
+
+    // Fire refund notification
+    try {
+      await this.notificationsService.notifyRefund(
+        payment.order.userId,
+        payment.orderId,
+        amount || payment.amount,
+        refundResult.id,
+      );
+    } catch (err) {
+      // Bypass
+    }
 
     return {
       status: 'success',

@@ -1,9 +1,9 @@
-import { IsArray, ValidateNested, IsString, IsNotEmpty, IsNumber, Min } from 'class-validator';
+import { IsArray, ValidateNested, IsString, IsNotEmpty, IsNumber, Min, IsOptional } from 'class-validator';
 import { Type } from 'class-transformer';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 class BasketItemDto {
-  @ApiProperty({ example: '123456789012', description: 'Product EAN/UPC barcode' })
+  @ApiProperty({ example: '8801097250046', description: 'Product EAN/UPC barcode' })
   @IsString()
   @IsNotEmpty()
   barcode: string;
@@ -20,4 +20,9 @@ export class CreateOrderDto {
   @ValidateNested({ each: true })
   @Type(() => BasketItemDto)
   items: BasketItemDto[];
+
+  @ApiPropertyOptional({ example: 'store-uuid-12345', description: 'Optional store ID context' })
+  @IsOptional()
+  @IsString()
+  storeId?: string;
 }
