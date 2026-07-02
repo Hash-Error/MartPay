@@ -32,16 +32,46 @@ model User {
   @@map("users")
 }
 
-model Product {
-  id          String   @id @default(uuid())
-  barcode     String   @unique
-  name        String
-  price       Float
-  stock       Int
+model Category {
+  id          String    @id @default(uuid())
+  name        String    @unique
   description String?
-  createdAt   DateTime @default(now())
+  products    Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id           String   @id @default(uuid())
+  barcode      String   @unique
+  name         String
+  price        Float
+  stock        Int
+  description  String?
+  imageUrl     String?
+  discountRate Float    @default(0.0)
+  categoryId   String
+  createdAt    DateTime @default(now())
+
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  offers   Offer[]
 
   @@map("products")
+}
+
+model Offer {
+  id                 String   @id @default(uuid())
+  productId          String
+  title              String
+  description        String?
+  discountPercentage Float    @default(0.0)
+  startDate          DateTime
+  endDate            DateTime
+  createdAt          DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("offers")
 }
 
 model Order {
