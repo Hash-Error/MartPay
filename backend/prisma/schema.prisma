@@ -8,13 +8,25 @@ generator client {
 }
 
 model User {
-  id           String     @id @default(uuid())
-  username     String     @unique
-  passwordHash String
-  role         String     @default("customer") // "customer" | "gate_staff" | "admin"
-  createdAt    DateTime   @default(now())
-  orders       Order[]
-  auditLogs    AuditLog[]
+  id                  String               @id @default(uuid())
+  username            String               @unique
+  passwordHash        String
+  role                String               @default("customer") // "customer" | "gate_staff" | "admin"
+  fullName            String?
+  email               String?              @unique
+  phoneNumber         String?
+  isActive            Boolean              @default(true)
+  otpCode             String?
+  otpExpiresAt        DateTime?
+  otpPurpose          String?              // "REGISTRATION" | "PASSWORD_RESET"
+  createdAt           DateTime             @default(now())
+  orders              Order[]
+  auditLogs           AuditLog[]
+  sessions            Session[]
+  devices             Device[]
+  addresses           Address[]
+  paymentMethods      PaymentMethod[]
+  notificationSetting NotificationSetting?
 
   @@map("users")
 }
@@ -58,4 +70,81 @@ model AuditLog {
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@map("audit_logs")
+}
+
+model Session {
+  id               String   @id @default(uuid())
+  userId           String
+  refreshTokenHash String
+  userAgent        String?
+  ipAddress        String?
+  isRevoked        Boolean  @default(false)
+  expiresAt        DateTime
+  createdAt        DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model Device {
+  id          String   @id @default(uuid())
+  userId      String
+  deviceId    String
+  deviceName  String?
+  deviceToken String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, deviceId])
+  @@map("devices")
+}
+
+model Address {
+  id         String   @id @default(uuid())
+  userId     String
+  title      String   // "Home", "Work", etc.
+  street     String
+  city       String
+  state      String?
+  postalCode String
+  country    String
+  isDefault  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("addresses")
+}
+
+model PaymentMethod {
+  id                String   @id @default(uuid())
+  userId            String
+  cardHolderName    String
+  cardNumberMasked  String   // "**** **** **** 1234"
+  cardType          String   // "Visa", "MasterCard", etc.
+  expirationDate    String   // "MM/YY"
+  token             String   // Secure token string from mock card processors
+  isDefault         Boolean  @default(false)
+  createdAt         DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("payment_methods")
+}
+
+model NotificationSetting {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  emailAlerts Boolean  @default(true)
+  pushAlerts  Boolean  @default(true)
+  smsAlerts   Boolean  @default(false)
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notification_settings")
 }
